@@ -25,24 +25,17 @@ spustac(InitialState,FinalState,Plan, N):- solve(InitialState, %Tu končí poči
 
 % Akcie
 opn( go(X,Y), % name
-  [at(monkey,X),on(monkey,floor)], % preconditions
-  [at(monkey,Y)], % add list
-  [at(monkey,X)] ). % delete list
+  [exist(X,Y),free(Y),at('S',X)], % preconditions | exist znamená, že Y vlastne existuje v 4roch smeroch okolo Xa dá sa z neho ísť na Y
+  [free(X),at('S',Y)], % add list
+  [free(Y),at('S',X)]). % delete list
 
-opn( push(box,X,Y), % name
-  [at(monkey,X),on(monkey,floor),at(box,X),on(box,floor)], % preconditions
-  [at(monkey,Y),at(box,Y) ], % add list
-  [at(monkey,X),at(box,X)] ). % delete list
+  
+opn(push(X, Y, Z),
+    [at('S', X), at('C', Y), pushable(Y, Z), free(Z)], % Preconditions
+    [at('C', Z), at('S', Y), free(X)],                          % Add list
+    [at('C', Y), at('S', X), free(Z),pushable(Y, Z)]                  % Delete list
+).
 
-opn( climb_on(box), % name
-  [at(monkey,X),on(monkey,floor),at(box,X),on(box,floor)], % preconditions
-  [on(monkey,box) ], % add list
-  [on(monkey,floor)] ). % delete list
-
-opn( grab(bananas) , % name
-  [on(monkey,box) ,at(box,X),at(bananas,X),status(bananas,hanging)], % preconditions
-  [status(bananas,grabbed)], % add list
-  [status(bananas,hanging)] ). % delete list
 
 
 
