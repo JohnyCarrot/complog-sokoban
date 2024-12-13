@@ -23,10 +23,12 @@ class Sokoban:
                     asp_fakty.append(f"sokoban({x},{y}).")
                     self.pociatocna_pozicia = (x, y)
                 elif znak == 's':
-                    asp_fakty.append(f"sokoban_in_storage({x},{y}).")
+                    asp_fakty.append(f"sokoban({x},{y}).")
+                    asp_fakty.append(f"storage({x},{y}).")
                     self.pociatocna_pozicia = (x, y)
                 elif znak == 'c':
-                    asp_fakty.append(f"crate_in_storage({x},{y}).")
+                    asp_fakty.append(f"crate({x},{y}).")
+                    asp_fakty.append(f"storage({x},{y}).")
 
         return '\n'.join(asp_fakty)
 
@@ -37,22 +39,28 @@ class Sokoban:
             raise ValueError("Počiatočná pozícia Sokobana nie je definovaná v mape.")
 
         pravidla_pohybu = f"""
+        % smery
         direction(up, 0, -1).
         direction(down, 0, 1).
         direction(left, -1, 0).
         direction(right, 1, 0).
 
+        % Počiatočná pozícia sokobana
         move(0, {self.pociatocna_pozicia[0]}, {self.pociatocna_pozicia[1]}).
 
+        % Pohyb chceným smerom
         move(T+1, X2, Y2) :-
             move(T, X1, Y1),
             direction(Smer, DX, DY),
             vykonaj(T, Smer),
             X2 = X1 + DX,
             Y2 = Y1 + DY,
-            not wall(X2, Y2).
+            not wall(X2, Y2),
+            not crate(X2, Y2).
 
+        % Stopka, ak narazí na boxik / stenu
         :- move(T+1, X, Y), wall(X, Y).
+        :- move(T+1, X, Y), crate(X, Y).
         """
 
         mapovanie_smerov = {'h': 'up', 'd': 'down', 'l': 'left', 'p': 'right'}
@@ -80,7 +88,7 @@ if __name__ == "__main__":
     cesta_suboru = "map1.txt"
     sokoban = Sokoban(cesta_suboru)
 
-    sekvencia = "ddll"  # Sekvencia pohybov
+    sekvencia = "pppd"  # Sekvencia pohybov
     pohyby = sokoban.vyries_pohyb(sekvencia)
 
     for pohyb in pohyby:
