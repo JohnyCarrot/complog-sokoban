@@ -32,7 +32,7 @@ class Sokoban:
 
         return '\n'.join(asp_fakty)
 
-    def vyries_pohyb(self, sekvencia):
+    def vyries(self, sekvencia):
         asp_reprezentacia = self.mapa_do_asp()
 
         if not self.pociatocna_pozicia:
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     sokoban = Sokoban(cesta_suboru)
 
     sekvencia = "pppd"  # Sekvencia pohybov
-    pohyby = sokoban.vyries_pohyb(sekvencia)
+    pohyby = sokoban.vyries(sekvencia)
 
     for pohyb in pohyby:
         print(pohyb)
