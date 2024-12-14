@@ -1,5 +1,5 @@
 import clingo
-
+import re
 class Sokoban:
     def __init__(self, cesta_suboru):
         self.cesta_suboru = cesta_suboru
@@ -31,6 +31,71 @@ class Sokoban:
                     asp_fakty.append(f"storage({x},{y}).")
 
         return '\n'.join(asp_fakty)
+
+    def vykresli_mapu(self, riesenie):
+        walls = set()
+        crates = set()
+        storages = set()
+        sokoban = None
+
+        for fakt in riesenie:
+            if fakt.startswith("wall"):
+                match = re.match(r"wall\((\d+),(\d+)\)", fakt)
+                if match:
+                    x, y = map(int, match.groups())
+                    walls.add((x, y))
+            elif fakt.startswith("crate"):
+                match = re.match(r"crate\((\d+),(\d+)\)", fakt)
+                if match:
+                    x, y = map(int, match.groups())
+                    crates.add((x, y))
+            elif fakt.startswith("storage"):
+                match = re.match(r"storage\((\d+),(\d+)\)", fakt)
+                if match:
+                    x, y = map(int, match.groups())
+                    storages.add((x, y))
+            elif fakt.startswith("move"):
+                match = re.match(r"move\(\d+,(\d+),(\d+)\)", fakt)
+                if match:
+                    sokoban = tuple(map(int, match.groups()))
+
+        max_width = max(
+            max((x for x, _ in walls), default=0),
+            max((x for x, _ in storages), default=0),
+            sokoban[0] if sokoban else 0,
+        ) + 1
+
+        max_height = max(
+            max((y for _, y in walls), default=0),
+            max((y for _, y in storages), default=0),
+            sokoban[1] if sokoban else 0,
+        ) + 1
+
+        mapa = [[" " for _ in range(max_width)] for _ in range(max_height)]
+
+        for x, y in walls:
+            mapa[y][x] = "#"
+
+        for x, y in storages:
+            if mapa[y][x] == " ":
+                mapa[y][x] = "X"
+
+        for x, y in crates:
+            if mapa[y][x] == "X":
+                mapa[y][x] = "c"
+            else:
+                mapa[y][x] = "C"
+
+        if sokoban:
+            x, y = sokoban
+            if mapa[y][x] == "X":
+                mapa[y][x] = "s"
+            else:
+                mapa[y][x] = "S"
+
+        print("\nKonečný stav mapy:")
+        for riadok in mapa:
+            print("".join(riadok))
 
     def vyries(self, sekvencia):
         asp_reprezentacia = self.mapa_do_asp()
@@ -80,7 +145,7 @@ class Sokoban:
             riesenie.extend([str(symbol) for symbol in model.symbols(shown=True)])
 
         ctl.solve(on_model=na_model)
-
+        self.vykresli_mapu(riesenie)
         return [fakt for fakt in riesenie if fakt.startswith("move")]
 
 
