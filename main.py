@@ -41,16 +41,13 @@ class Sokoban:
 
         max_time = 0
 
-        # Vyberieme max_time na základe všetkých faktov move a crate
         for fakt in riesenie:
-            # matchujeme move(T,...), crate(T,...) a push(T,...) a zistíme najväčší T
             match = re.match(r"(move|crate|push)\((\d+),", fakt)
             if match:
                 t = int(match.group(2))
                 if t > max_time:
                     max_time = t
 
-        # Teraz prejdeme znovu riešenie a extrahujeme len fakty z max_time
         for fakt in riesenie:
             if fakt.startswith("wall"):
                 match = re.match(r"wall\((\d+),(\d+)\)", fakt)
@@ -75,7 +72,6 @@ class Sokoban:
                     if t == max_time:
                         sokoban = (x, y)
 
-        # Ak by náhodou Sokoban nebol v max_time kroku, nájdeme ho v poslednom čase, kde sa pohol
         if not sokoban:
             latest_sokoban_time = -1
             latest_sokoban_pos = None
@@ -133,7 +129,7 @@ class Sokoban:
 
         pravidla_pohybu = f"""
         % Pridanie času kvôli cyklom
-       #const maxTime=100.
+        #const maxTime=100.
         time(0..maxTime).
         
         % Smer pohybu
@@ -141,6 +137,16 @@ class Sokoban:
         direction(down, 0, 1).
         direction(left, -1, 0).
         direction(right, 1, 0).
+        
+        % Ak stena -> nič|žiaden pohyb :)
+        kto_ta_odblokuje_v_takom_necase(T,X,Y) :-
+            time(T),
+            wall(X,Y).
+            
+        % Ak škatuľka -> nič|žiaden pohyb :)
+        kto_ta_odblokuje_v_takom_necase(T,X,Y) :-
+            time(T),
+            crate(T,X,Y).
         
         % Pohyb Sokobana bez škatule (bez push)
         move(T+1, X2, Y2) :-
@@ -153,6 +159,7 @@ class Sokoban:
             not wall(X2, Y2),
             not crate(T, X2, Y2).
         
+        % Posun škatule (push)
         push(T, X1, Y1, X2, Y2, X3, Y3) :-
             time(T),
             move(T, X1, Y1),
@@ -167,23 +174,35 @@ class Sokoban:
             not crate(T, X3, Y3).
         
         % Aktualizácia škatul
-        crate(T+1, X3, Y3) :- push(T, _, _, _, _, X3, Y3).
+        crate(T+1, X3, Y3) :-
+            push(T, _, _, _, _, X3, Y3).
         
-        % neposunute škatule ostavajú na mieste
+         % neposunute škatule ostavajú na mieste
         crate(T+1, X, Y) :-
             time(T),
             crate(T, X, Y),
             not push(T, _, _, X, Y, _, _).
         
         % Sokoban - > pozicia škatulky
-        move(T+1, X2, Y2) :- push(T, _, _, X2, Y2, _, _).
+        move(T+1, X2, Y2) :-
+            push(T, _, _, X2, Y2, _, _).
+        
+        move(T+1, X, Y) :-
+            time(T),
+            move(T, X, Y),
+            direction(Smer, DX, DY),
+            vykonaj(T, Smer),
+            X1 = X + DX,
+            Y1 = Y + DY,
+            kto_ta_odblokuje_v_takom_necase(T, X1, Y1),
+            not push(T, _, _, X1, Y1, _, _).
         
         % Stena
         :- move(T+1, X, Y), wall(X, Y).
         
         % Nemožno vojsť do škatule ak sa neposúva
         :- move(T+1, X, Y), crate(T, X, Y), not push(T, _, _, X, Y, _, _).
-        
+
 
         """
 
@@ -205,15 +224,16 @@ class Sokoban:
 
         ctl.solve(on_model=na_model)
         self.vykresli_mapu(riesenie)
+        print(riesenie)
         return [fakt for fakt in riesenie if fakt.startswith("move") or fakt.startswith("push")]
 
 if __name__ == "__main__":
     cesta_suboru = "map1.txt"
     sokoban = Sokoban(cesta_suboru)
 
-    sekvencia = "pppddlllhdphphppl"  # Sekvencia pohybov
+    sekvencia = "dhhhhhhhhhpppppppppddddddddddddllllllhhhhpppphhhhhhhhlllllll"  # Sekvencia pohybov
     pohyby = sokoban.vyries(sekvencia)
 
     for pohyb in pohyby:
-        print(pohyb)
+        #print(pohyb)
         pass
