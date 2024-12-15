@@ -11,9 +11,8 @@ class Sokoban:
         asp_fakty = []
         with open(self.cesta_suboru, 'r') as file:
             self.mapa_data = file.readlines()
-
         for y, riadok in enumerate(self.mapa_data):
-            for x, znak in enumerate(riadok.strip()):
+            for x, znak in enumerate(riadok):
                 if znak == '#':
                     asp_fakty.append(f"wall({x},{y}).")
                 elif znak == 'C':
@@ -30,7 +29,6 @@ class Sokoban:
                 elif znak == 'c':
                     asp_fakty.append(f"crate(0, {x},{y}).")
                     asp_fakty.append(f"storage({x},{y}).")
-
         return '\n'.join(asp_fakty)
 
     def vykresli_mapu(self, riesenie):
@@ -38,16 +36,13 @@ class Sokoban:
         crates = {}
         storages = set()
         sokoban = None
-
         max_time = 0
-
         for fakt in riesenie:
             match = re.match(r"(move|crate|push)\((\d+),", fakt)
             if match:
                 t = int(match.group(2))
                 if t > max_time:
                     max_time = t
-
         for fakt in riesenie:
             if fakt.startswith("wall"):
                 match = re.match(r"wall\((\d+),(\d+)\)", fakt)
@@ -71,7 +66,6 @@ class Sokoban:
                     t, x, y = map(int, match.groups())
                     if t == max_time:
                         sokoban = (x, y)
-
         if not sokoban:
             latest_sokoban_time = -1
             latest_sokoban_pos = None
@@ -84,53 +78,42 @@ class Sokoban:
                             latest_sokoban_time = t
                             latest_sokoban_pos = (x, y)
             sokoban = latest_sokoban_pos
-
-        # Vypočet rozmery mapy
         max_width = max(
             max((x for x, _ in walls), default=0),
             max((x for x, _ in storages), default=0),
             sokoban[0] if sokoban else 0,
         ) + 1
-
         max_height = max(
             max((y for _, y in walls), default=0),
             max((y for _, y in storages), default=0),
             sokoban[1] if sokoban else 0,
         ) + 1
-
         mapa = [[" " for _ in range(max_width)] for _ in range(max_height)]
-
         for x, y in walls:
             mapa[y][x] = "#"
-
         for x, y in storages:
             if mapa[y][x] == " ":
                 mapa[y][x] = "X"
-
         for (x, y), t in crates.items():
             if mapa[y][x] == "X":
                 mapa[y][x] = "c"
             else:
                 mapa[y][x] = "C"
-
         if sokoban:
             x, y = sokoban
             if mapa[y][x] == "X":
                 mapa[y][x] = "s"
             else:
                 mapa[y][x] = "S"
-
-        print("\nKonečný stav mapy:")
         for riadok in mapa:
             print("".join(riadok))
 
-    def vyries(self, sekvencia):
+    def vyries(self,times=10):
         asp_reprezentacia = self.mapa_do_asp()
-
         pravidla_pohybu = f"""
         % Pridanie času kvôli cyklom
-        #const maxTime=100.
-        time(0..maxTime).
+        #const maxSteps={times}.
+        time(0..maxSteps).
         
         % Smer pohybu
         direction(up, 0, -1).
@@ -142,7 +125,7 @@ class Sokoban:
         kto_ta_odblokuje_v_takom_necase(T,X,Y) :-
             time(T),
             wall(X,Y).
-            
+        
         % Ak škatuľka -> nič|žiaden pohyb :)
         kto_ta_odblokuje_v_takom_necase(T,X,Y) :-
             time(T),
@@ -151,12 +134,12 @@ class Sokoban:
         % Pohyb Sokobana bez škatule (bez push)
         move(T+1, X2, Y2) :-
             time(T),
-            move(T, X1, Y1),
-            direction(Smer, DX, DY),
-            vykonaj(T, Smer),
-            X2 = X1 + DX,
-            Y2 = Y1 + DY,
-            not wall(X2, Y2),
+            move(T,X1 ,Y1),
+            direction(Smer, DX ,DY),
+            vykonaj(T,Smer),
+            X2=X1+ DX,
+            Y2=Y1+DY,
+            not wall(X2,Y2),
             not crate(T, X2, Y2).
         
         % Posun škatule (push)
@@ -165,17 +148,17 @@ class Sokoban:
             move(T, X1, Y1),
             direction(Smer, DX, DY),
             vykonaj(T, Smer),
-            X2 = X1 + DX,
+            X2 = X1+ DX,
             Y2 = Y1 + DY,
             crate(T, X2, Y2),
             X3 = X2 + DX,
-            Y3 = Y2 + DY,
+            Y3 = Y2 +DY,
             not wall(X3, Y3),
             not crate(T, X3, Y3).
         
         % Aktualizácia škatul
         crate(T+1, X3, Y3) :-
-            push(T, _, _, _, _, X3, Y3).
+            push(T,_, _, _, _, X3, Y3).
         
          % neposunute škatule ostavajú na mieste
         crate(T+1, X, Y) :-
@@ -199,41 +182,48 @@ class Sokoban:
         
         % Stena
         :- move(T+1, X, Y), wall(X, Y).
-        
         % Nemožno vojsť do škatule ak sa neposúva
-        :- move(T+1, X, Y), crate(T, X, Y), not push(T, _, _, X, Y, _, _).
-
-
+        :- move(T+1, X, Y), crate(T, X,Y), not push(T,_ ,_ ,X,Y,_ ,_).
+        
+        %Nejaka škatulka nie je v storidzy
+        boks_out_of_storidz(T) :-
+            time(T),
+            crate(T,X,Y),
+            not storage(X,Y).
+        %Ak každá škatulka je v storidžy - > vyhral som
+        theend(T) :-
+            time(T),
+            not boks_out_of_storidz(T).
+        %Generátor na práve jeden pohyb až dokým nieje nájdený koniec
+        {{ vykonaj(T, Smer) : direction(Smer,_, _) }}= 1 :-
+            time(T),
+            not theend(T).
+        %Teraz, keď som už skončil, fakt sa netreba hýbať
+        :- vykonaj(T,_) , theend(IKS), IKS<= T.
+        
+        %Vyberám len model, ktorý sa zmestil do počtu krokov
+        :- not theend(maxSteps).
+        
+        %Oddelenie jedla od odpadu| už netreba :)
+        #show move/3.
+        #show push/7.
+        #show storage/2.
+        #show wall/2.
+        #show crate/3.
         """
-
-        mapovanie_smerov = {'h': 'up', 'd': 'down', 'l': 'left', 'p': 'right'}
-        sekvencia_fakty = [
-            f"vykonaj({i}, {mapovanie_smerov[s]})." for i, s in enumerate(sekvencia)
-        ]
-
-        asp_program = asp_reprezentacia + "\n" + pravidla_pohybu + "\n" + "\n".join(sekvencia_fakty)
-
         ctl = clingo.Control()
-        ctl.add("base", [], asp_program)
+        ctl.add("base", [], asp_reprezentacia + "\n" + pravidla_pohybu)
         ctl.ground([("base", [])])
-
         riesenie = []
-
-        def na_model(model):
+        def model(model):
             riesenie.extend([str(symbol) for symbol in model.symbols(shown=True)])
-
-        ctl.solve(on_model=na_model)
+        ctl.solve(on_model=model)
         self.vykresli_mapu(riesenie)
-        print(riesenie)
-        return [fakt for fakt in riesenie if fakt.startswith("move") or fakt.startswith("push")]
+        return riesenie
 
 if __name__ == "__main__":
-    cesta_suboru = "map1.txt"
+    cesta_suboru = "map8.txt"
     sokoban = Sokoban(cesta_suboru)
-
-    sekvencia = "dhhhhhhhhhpppppppppddddddddddddllllllhhhhpppphhhhhhhhlllllll"  # Sekvencia pohybov
-    pohyby = sokoban.vyries(sekvencia)
-
-    for pohyb in pohyby:
-        #print(pohyb)
+    pohyby = sokoban.vyries()
+    for p in pohyby:
         pass
