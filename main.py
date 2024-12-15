@@ -1,11 +1,20 @@
 import clingo
 import re
+import sys
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QVBoxLayout, QLabel,
+    QListWidget, QPushButton, QWidget, QHBoxLayout, QStackedWidget
+)
+from PyQt5.QtGui import QFont
+from PyQt5.QtCore import Qt
 
-class Sokoban:
-    def __init__(self, cesta_suboru):
-        self.cesta_suboru = cesta_suboru
+class Sokoban(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.cesta_suboru = None
         self.mapa_data = []
         self.pociatocna_pozicia = None
+        self.init_ui()
 
     def mapa_do_asp(self):
         asp_fakty = []
@@ -221,9 +230,138 @@ class Sokoban:
         self.vykresli_mapu(riesenie)
         return riesenie
 
+    def init_ui(self):
+        self.setWindowTitle("Sokoban Solver")
+        self.setGeometry(100, 100, 600, 400)
+
+
+        self.zasobnik_widgetov = QStackedWidget()
+        self.setCentralWidget(self.zasobnik_widgetov)
+
+
+        self.main_menu = self.spawni_main_menu()
+        self.zasobnik_widgetov.addWidget(self.main_menu)
+
+    def spawni_main_menu(self):
+        m_menu_widget = QWidget()
+        m_menu_lajaut = QVBoxLayout()
+
+        title_label = QLabel("Sokoban Solver")
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setFont(QFont("Arial", 24, QFont.Bold))
+        title_label.setStyleSheet("color: rgb(255, 0, 255);")  # Do budúcna náhodné farby animácia
+        m_menu_lajaut.addWidget(title_label)
+
+        vyber_mapy_label = QLabel("Výber mapy")
+        vyber_mapy_label.setAlignment(Qt.AlignCenter)
+        vyber_mapy_label.setFont(QFont("Arial", 18, QFont.Bold))
+        vyber_mapy_label.setStyleSheet("color: rgb(0, 255, 0);")  #  Tiež pozrieť na farbu
+        m_menu_lajaut.addWidget(vyber_mapy_label)
+
+        # Zoznam názvou máp
+        self.mapovy_list = QListWidget()
+        self.mapovy_list.setFont(QFont("Arial", 12))
+        self.mapovy_list.addItems(["map1.txt", "map2.txt", "map3.txt"])
+        self.mapovy_list.setStyleSheet("border: 1px solid #aaa;")
+        m_menu_lajaut.addWidget(self.mapovy_list)
+
+        solve_tlacidlo = QPushButton("Vyrieš")
+        solve_tlacidlo.setFont(QFont("Arial", 16, QFont.Bold))
+        solve_tlacidlo.setStyleSheet(
+            "background-color: rgb(255, 0, 0); color: white; padding: 10px;"
+        )
+        solve_tlacidlo.clicked.connect(self.vyber_mapu)
+        m_menu_lajaut.addWidget(solve_tlacidlo)
+
+        m_menu_widget.setLayout(m_menu_lajaut)
+        return m_menu_widget
+
+    def vyrob_scenu_pre_mapu(self, map_name):
+        mapa_w = QWidget()
+        mapa_lay = QVBoxLayout()
+
+        map_label = QLabel(f"Riešim mapu: {map_name}")
+        map_label.setAlignment(Qt.AlignCenter)
+        map_label.setFont(QFont("Arial", 18, QFont.Bold))
+        map_label.setStyleSheet("color: rgb(0, 0, 255);")
+        mapa_lay.addWidget(map_label)
+
+
+        navigacia = QHBoxLayout()
+
+        s5tlacidlo = QPushButton("◀")
+        s5tlacidlo.setFont(QFont("Arial", 14))
+        s5tlacidlo.clicked.connect(self.predchadzajuci_krok)
+
+        self.label_pre_kroky = QLabel("Krok 0 / 0")
+        self.label_pre_kroky.setAlignment(Qt.AlignCenter)
+        self.label_pre_kroky.setFont(QFont("Arial", 14))
+
+        dalej_tlacidlo = QPushButton("▶")
+        dalej_tlacidlo.setFont(QFont("Arial", 14))
+        dalej_tlacidlo.clicked.connect(self.dalsi_krok)
+
+        navigacia.addWidget(s5tlacidlo)
+        navigacia.addWidget(self.label_pre_kroky)
+        navigacia.addWidget(dalej_tlacidlo)
+
+        mapa_lay.addLayout(navigacia)
+
+        menu_tlacidl = QPushButton("Späť do menu")
+        menu_tlacidl.setFont(QFont("Arial", 14))
+        menu_tlacidl.setStyleSheet("background-color: rgb(0, 255, 0); color: black; padding: 10px;")
+        menu_tlacidl.clicked.connect(self.nas5dohlmenu)
+        mapa_lay.addWidget(menu_tlacidl)
+
+        mapa_w.setLayout(mapa_lay)
+        return mapa_w
+
+    def vyber_mapu(self):
+        mapka_ako_item = self.mapovy_list.currentItem()
+        if mapka_ako_item:
+            mapka_meno = mapka_ako_item.text()
+            print(f"Riešim mapu: {mapka_meno}")
+
+            # Simulacia krokov
+            self.vsetky_akcie_zoznam = [
+                "Krok 1: Sokoban sa pohol doprava",
+                "Krok 2: Sokoban sa pohol doprava",
+                "Krok 3: Sokoban posunul škatuľu",
+                "Krok 4: Sokoban sa pohol dole"
+            ]
+            self.aktualny_krok = 0
+
+            # Prepnutie do mapovej scény
+            mapova_scenka = self.vyrob_scenu_pre_mapu(mapka_meno)
+            self.zasobnik_widgetov.addWidget(mapova_scenka)
+            self.zasobnik_widgetov.setCurrentWidget(mapova_scenka)
+
+
+            self.aktualizuj_krok_label()
+        else:
+            print("Žiadna mapa nebola vybraná!")
+
+    def predchadzajuci_krok(self):
+        if self.aktualny_krok > 0:
+            self.aktualny_krok -= 1
+            self.aktualizuj_krok_label()
+
+    def dalsi_krok(self):
+        if self.aktualny_krok < len(self.vsetky_akcie_zoznam) - 1:
+            self.aktualny_krok += 1
+            self.aktualizuj_krok_label()
+
+    def aktualizuj_krok_label(self):
+        if self.vsetky_akcie_zoznam:
+            self.label_pre_kroky.setText(f"Krok {self.aktualny_krok + 1} / {len(self.vsetky_akcie_zoznam)}")
+            print(self.vsetky_akcie_zoznam[self.aktualny_krok])
+
+    def nas5dohlmenu(self):
+        self.zasobnik_widgetov.setCurrentWidget(self.main_menu)
+
+
 if __name__ == "__main__":
-    cesta_suboru = "map8.txt"
-    sokoban = Sokoban(cesta_suboru)
-    pohyby = sokoban.vyries()
-    for p in pohyby:
-        pass
+    app = QApplication(sys.argv)
+    sokoban_app = Sokoban()
+    sokoban_app.show()
+    sys.exit(app.exec_())
