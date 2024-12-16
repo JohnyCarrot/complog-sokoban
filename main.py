@@ -2,12 +2,13 @@ import clingo
 import re
 import sys
 import os
+import random
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QLabel,
     QListWidget, QPushButton, QWidget, QHBoxLayout, QStackedWidget, QGridLayout
 )
 from PyQt5.QtGui import QFont
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 
 class Sokoban(QMainWindow):
     def __init__(self):
@@ -274,11 +275,15 @@ class Sokoban(QMainWindow):
         m_menu_widget = QWidget()
         m_menu_lajaut = QVBoxLayout()
 
-        title_label = QLabel("Sokoban Solver")
-        title_label.setAlignment(Qt.AlignCenter)
-        title_label.setFont(QFont("Arial", 24, QFont.Bold))
-        title_label.setStyleSheet("color: rgb(255, 0, 255);")  # Do budúcna náhodné farby animácia
-        m_menu_lajaut.addWidget(title_label)
+        self.title_label = QLabel("Sokoban Solver")
+        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setFont(QFont("Arial", 24, QFont.Bold))
+        self.title_label.setStyleSheet("color: rgb(255, 0, 255);")  # Do budúcna náhodné farby animácia
+        m_menu_lajaut.addWidget(self.title_label)
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_rainbow_text)
+        #self.timer.start(120) Epilepsia in coming
 
         vyber_mapy_label = QLabel("Výber mapy")
         vyber_mapy_label.setAlignment(Qt.AlignCenter)
@@ -303,6 +308,23 @@ class Sokoban(QMainWindow):
 
         m_menu_widget.setLayout(m_menu_lajaut)
         return m_menu_widget
+
+    def update_rainbow_text(self):
+        text = "Sokoban Solver"
+        styled_text = "<html><head/><body><p style='font-size:36px; font-weight:bold; font-family:Arial;'>"
+
+        for char in text:
+            if char != " ":
+                r = random.randint(0, 255)
+                g = random.randint(0, 255)
+                b = random.randint(0, 255)
+                styled_text += f'<span style="color: rgb({r},{g},{b});">{char}</span>'
+            else:
+                styled_text += " "
+
+        styled_text += "</p></body></html>"
+
+        self.title_label.setText(styled_text)
 
     def vyrob_scenu_pre_mapu(self, mapa_cesta):
         mapa_w = QWidget()
