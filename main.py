@@ -294,7 +294,7 @@ class Sokoban(QMainWindow):
         # Zoznam názvou máp
         self.mapovy_list = QListWidget()
         self.mapovy_list.setFont(QFont("Arial", 12))
-        self.mapovy_list.addItems(["map1.txt", "map4.txt", "map5.txt","map6.txt", "map8.txt"])
+        self.mapovy_list.addItems([subor for subor in os.listdir('.') if "map" in subor and subor.endswith(".txt")])
         self.mapovy_list.setStyleSheet("border: 1px solid #aaa;")
         m_menu_lajaut.addWidget(self.mapovy_list)
 

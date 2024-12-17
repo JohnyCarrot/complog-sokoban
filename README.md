@@ -11,4 +11,39 @@ To run this project, ensure the following:
    ```bash
    pip install -r requirements.txt
    ```
-3. SWI-Prolog: Make sure SWI-Prolog is installed and properly set up as a system PATH. You can download it from [swi-prolog.org](https://www.swi-prolog.org/download/stable/bin/swipl-9.2.8-1.x64.exe.envelope).
+3. **Operating System**: The project is recommended to run on Windows with x86_64 CPU architecture. Functionality on other platforms is not guaranteed.
+
+
+## How to Run project
+
+The Sokoban solver is designed to be easy and intuitive. You can solve any map as long as it meets the following criteria:
+- The map is in the correct representation:
+  - `#` - wall  
+  - `C` - crate (box)  
+  - `X` - storage (goal) position  
+  - `S` - Sokoban (player)  
+  - `s` - Sokoban in storage position  
+  - `c` - crate in storage position  
+- The map filename contains the word **"map"**.
+- The file has a **.txt** extension.
+- The file is located in the root directory of the project.
+
+You can also choose from a predefined list of maps available in the project.
+
+To run the project, navigate to the root directory and execute the following command:
+
+   ```bash
+   python main.py
+   ```
+### Using the Sokoban Solver
+1. After running the project, the **Main Menu** window will appear.
+2. In the main menu, you can select any available map to solve.
+
+![Main Menu Example](images/compolg-sokoban-menu-1.png)
+
+3. Once you click the **Solve** button, the solver will process the map and display the solution.
+
+![Solved Map Example](images/compol-sokoban-mapa-1.png)
+
+4. You can use the **forward** (▶) and **backward** (◀) buttons to step through the animation and observe the solution conveniently.
+
