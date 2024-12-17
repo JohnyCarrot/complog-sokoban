@@ -147,16 +147,6 @@ class Sokoban(QMainWindow):
         direction(left, -1, 0).
         direction(right, 1, 0).
         
-        % Ak stena -> nič|žiaden pohyb :)
-        kto_ta_odblokuje_v_takom_necase(T,X,Y) :-
-            time(T),
-            wall(X,Y).
-        
-        % Ak škatuľka -> nič|žiaden pohyb :)
-        kto_ta_odblokuje_v_takom_necase(T,X,Y) :-
-            time(T),
-            crate(T,X,Y).
-        
         % Pohyb Sokobana bez škatule (bez push)
         move(T+1, X2, Y2) :-
             time(T),
@@ -182,7 +172,7 @@ class Sokoban(QMainWindow):
             not wall(X3, Y3),
             not crate(T, X3, Y3).
         
-        % Aktualizácia škatul
+        % Tvorba škatulky po posune
         crate(T+1, X3, Y3) :-
             push(T,_, _, _, _, X3, Y3).
         
@@ -195,16 +185,6 @@ class Sokoban(QMainWindow):
         % Sokoban - > pozicia škatulky
         move(T+1, X2, Y2) :-
             push(T, _, _, X2, Y2, _, _).
-        
-        move(T+1, X, Y) :-
-            time(T),
-            move(T, X, Y),
-            direction(Smer, DX, DY),
-            vykonaj(T, Smer),
-            X1 = X + DX,
-            Y1 = Y + DY,
-            kto_ta_odblokuje_v_takom_necase(T, X1, Y1),
-            not push(T, _, _, X1, Y1, _, _).
         
         % Stena
         :- move(T+1, X, Y), wall(X, Y).

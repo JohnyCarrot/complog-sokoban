@@ -46,4 +46,4 @@ To run the project, navigate to the root directory and execute the following com
 ![Solved Map Example](images/compol-sokoban-mapa-1.png)
 
 4. You can use the **forward** (▶) and **backward** (◀) buttons to step through the animation and observe the solution conveniently.
-
+5. After solving the map, the application generates a file **`debug.txt`** containing all rules and constraints required to compute the solution for the selected map.
