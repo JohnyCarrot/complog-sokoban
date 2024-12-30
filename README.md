@@ -46,4 +46,12 @@ To run the project, navigate to the root directory and execute the following com
 ![Solved Map Example](images/compol-sokoban-mapa-1.png)
 
 4. You can use the **forward** (▶) and **backward** (◀) buttons to step through the animation and observe the solution conveniently.
-5. After solving the map, the application generates a file **`debug.txt`** containing all rules and constraints required to compute the solution for the selected map.
+5. The solver prints a human-readable and intuitive sequence of steps, sorted by time, to the console, enabling you to understand the solution process .
+
+   Example output for the map `map4.txt`:
+   ```
+   Sequence of steps for the map: map4.txt
+   ['move(0,1,1)', 'move(1,2,1)', 'move(2,3,1)', 'push(3,3,1,4,1,5,1)', 'push(4,4,1,5,1,6,1)', 'push(5,5,1,6,1,7,1)']
+    ```
+6. After solving the map, the application generates a file **`debug.txt`** containing all rules, constraints, and the resulting model required to compute the solution for the selected map.
+

@@ -324,6 +324,31 @@ class Sokoban(QMainWindow):
                 self.postupnost = temp
                 break
 
+        def extrahuj_cas(polozka):
+            match = re.match(r"(move|push)\((\d+),", polozka)
+            if match:
+                return int(match.group(2))
+            return float('inf')
+
+        vyfiltrovany_zoznam = [polozka for polozka in self.postupnost if
+                               polozka.startswith("move") or polozka.startswith("push")]
+        zoradeny_zoznam = sorted(vyfiltrovany_zoznam, key=extrahuj_cas)
+
+        upraveny_zoznam = []
+        for i, polozka in enumerate(zoradeny_zoznam):
+            if polozka.startswith("push"):
+                cas = extrahuj_cas(polozka) + 1
+                upraveny_zoznam.append(re.sub(r"push\((\d+),", f"push({cas},", polozka))
+                if i + 1 < len(zoradeny_zoznam) and zoradeny_zoznam[i + 1].startswith("move"):
+                    continue
+            elif polozka.startswith("move"):
+                if i > 0 and zoradeny_zoznam[i - 1].startswith("push"):
+                    continue
+                upraveny_zoznam.append(polozka)
+
+        print(f"Postupnosť krokov pre mapu: {mapa_cesta}")
+        print(upraveny_zoznam)
+
         self.grid_layout = QGridLayout()
         self.policka = {}
 
@@ -425,7 +450,25 @@ class Sokoban(QMainWindow):
             #print(f"Riešim mapu: {mapka_meno}")
 
 
-            mapova_scenka = self.vyrob_scenu_pre_mapu(mapka_meno)
+            loading_widget = QWidget()
+            loading_layout = QVBoxLayout()
+            loading_label = QLabel("Prebieha výpočet...")
+            loading_label.setAlignment(Qt.AlignCenter)
+            loading_label.setFont(QFont("Arial", 18))
+            loading_layout.addWidget(loading_label)
+            loading_widget.setLayout(loading_layout)
+
+            self.zasobnik_widgetov.addWidget(loading_widget)
+            self.zasobnik_widgetov.setCurrentWidget(loading_widget)
+            QApplication.processEvents()
+
+            try:
+                mapova_scenka = self.vyrob_scenu_pre_mapu(mapka_meno)
+            except Exception as e:
+                print(f"Chyba pri generovaní mapy: {e}")
+                loading_label.setText("Chyba pri načítavaní mapy, skúste inokedy")
+                return
+
             self.zasobnik_widgetov.addWidget(mapova_scenka)
             self.zasobnik_widgetov.setCurrentWidget(mapova_scenka)
 
